@@ -1,0 +1,181 @@
+---
+title: "CanonicalCorrelation"
+author: "S18809"
+date: "2024-05-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Loading Suitable Package
+```{r}
+library(ggplot2)
+library(GGally)
+library(CCA)#facilitates canonical correlation analysis
+library(CCP)#facilitates checking the significance of the canonical variates
+```
+```{r}
+library(dplyr)
+```
+```{r}
+library(tidyverse)
+```
+```{r}
+library(corrplot)
+```
+
+
+#### Loading the File
+```{r}
+bodyFat <- read_csv(file = "../Data/bodyfat.csv")
+```
+```{r}
+colnames(bodyFat)
+```
+
+####  Check the null values for all columns
+```{r}
+colSums(is.na(bodyFat))
+```
+#### Dimension of the data
+```{r}
+dim(bodyFat)
+```
+
+#### Summary of the Data set
+```{r}
+summary(bodyFat)
+```
+## Canonical Correlation Analysis
+
+```{r}
+body_composition_metrics <- bodyFat[, 1:5] #U_ Xvariables
+body_measurements <- bodyFat[, 6:15] #V_ Y variables
+```
+
+## Correlation matrix between each variables
+```{r}
+# Compute correlation matrix
+correlation_matrix <- cor(bodyFat)
+
+# Draw correlation matrix with customization
+corrplot(correlation_matrix, method = "number", col = colorRampPalette(c("blue", "white", "red"))(10),
+          type = "upper", order = "hclust", tl.col = "black", tl.srt = 45,
+          addrect = 3, rect.col = "grey", number.cex = 0.7, tl.cex = 0.8,
+          title = "Correlation Matrix")
+```
+
+
+```{r}
+ggpairs(body_composition_metrics)
+```
+
+```{r}
+ggpairs(body_measurements)
+```
+
+
+```{r}
+#checking the between and within set associations
+matcor(body_composition_metrics,body_measurements)
+```
+
+
+```{r}
+#obtaining the canonical correlations
+CC_bodyFat <- cc(body_composition_metrics,body_measurements)
+```
+
+### Display the Canonical Correlation
+```{r}
+CC_bodyFat$cor
+```
+
+```{r}
+squared_canonical_correlations <- (CC_bodyFat$cor)^2
+print("Squared Canonical Correlations:")
+print(squared_canonical_correlations)
+```
+
+
+```{r}
+#raw canonical coefficients
+CC_bodyFat[3:4]
+```
+
+
+```{r}
+# compute canonical loading
+cc_bodyFat_2 <- comput(body_composition_metrics,body_measurements,CC_bodyFat)
+```
+
+```{r}
+#displays the canonical loading
+cc_bodyFat_2[3:6]
+```
+# Test the Canonical correlation
+```{r}
+rho <- CC_bodyFat$cor
+```
+
+## Define number of observations, number of variables in first set, and number of variables in the second set.
+```{r}
+n <- dim(body_composition_metrics)[1]
+p <- length(body_composition_metrics)
+q <- length(body_measurements)
+```
+
+
+## Calculate p-values using the F-approximations of different test statistics:
+```{r}
+p.asym(rho, n, p, q, tstat = "Wilks")
+```
+```{r}
+p.asym(rho, n, p, q, tstat = "Hotelling")
+```
+
+```{r}
+p.asym(rho, n, p, q, tstat = "Pillai")
+```
+```{r}
+p.asym(rho, n, p, q, tstat = "Roy")
+```
+
+## Standardize the data set
+```{r}
+# Standardize first canonical variables
+std_1<-diag(sqrt(diag(cov(body_composition_metrics))))
+ss_1<- std_1%*%CC_bodyFat$xcoef
+`rownames<-`(ss_1,c("Density","BodyFat","Age","Weight","Height"))
+```
+```{r}
+# Standardize second canonical variables
+std_2<-diag(sqrt(diag(cov(body_measurements))))
+ss_2<- std_2%*%CC_bodyFat$ycoef
+`rownames<-`(ss_2,c("Neck","Chest","Abdomen","Hip","Thigh","Knee","Ankle","Biceps"
+                    ,"Forearm","Wrist"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
